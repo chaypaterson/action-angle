@@ -17,7 +17,8 @@ double T(double p)
 double V(double x)
 {	// this is the potential
 	double V;
-	V = x*x/2;	// harmonic oscillator, k=1
+//	V = x*x/2;	// harmonic oscillator, k=1
+	V = x*x*x*x/4 - x*x/2; // double dip well
 	return V;
 }
 
@@ -109,9 +110,9 @@ int main()
 	// Constant increments:
 	double dx = 0.001;
 	double dp = 0.001;
-	double dE = 0.1;
+	double dE = 0.01;
 
-	double Emin = 0;
+	double Emin = 0.1;
 	double Emax = 10;
 	double E;
 
