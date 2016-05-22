@@ -18,7 +18,8 @@ double V(double x)
 {	// this is the potential
 	double V;
 //	V = x*x/2;	// harmonic oscillator, k=1
-	V = x*x*x*x/4 - x*x/2; // double dip well
+//	V = x*x*x*x/4 - x*x/2; // double dip well
+	V = 1-1/(1+x*x/2);	// lorentzian
 	return V;
 }
 
@@ -40,22 +41,23 @@ double Pick(int i, int b)
 
 double J(double E, double dx, double dp)
 {	// Calculate J for a given E.
+	// TODO This algorithm is dumb! 
+	// Find a more efficient way to calculate areas.
 	double dJ = dx * dp; // area unit
 
 	// initialise counters:
 	int i=0; // the origin is counted in loop
-	int b=0;
 
 	// We will start at the origin:
 	double x = 0;
 	double p = 0;
+
+	// Find the edges on the x-axis:
 	while (H(x,p)<E)
 	{	// first scan across x:
 		i++;	// if the loop has not exited then we are inside
 		x += dx;
 	}
-
-	b++; // there must be a boundary point here if the loop exits
 
 	double Apos = x; // note the +ve amplitude
 
@@ -67,10 +69,9 @@ double J(double E, double dx, double dp)
 		x -= dx;
 	}
 
-	b++; // boundary point at this extreme too
 	double Aneg = x;
 
-	// Now we scan inside:
+	// Now we scan off the X axis to find other edges:
 	
 	for (x=Aneg; x<Apos; x+=dx)
 	{	// scanning between Aneg<x<Apos:
@@ -81,8 +82,6 @@ double J(double E, double dx, double dp)
 			p += dp;
 		}
 
-		b++; // boundary point
-
 		p=-dp; // start below the x axis.
 		while (H(x,p)<E)
 		{	// sweep DOWN p..
@@ -90,30 +89,19 @@ double J(double E, double dx, double dp)
 			p -= dp;
 		}
 
-		b++; // boundary point
 	}
 
-//	return Pick(i,b)*dJ; // the phase area J(E)
 	return (double)i*dJ; // cruder area
 }
 
 int main()
-{	// the calculation itself consists of two parts:
-	// setting an energy level E
-	// calculating J(E):
-	// 	find edges of phase portrait
-	// 		i.e. move outwards until H(x,p)>E
-	// 		at which point b++
-	// 	along the way, count interior points i
-	// 	now the lattice area is i+b/2-1 times a unit area.
-
-	// Constant increments:
+{	// Constant increments:
 	double dx = 0.001;
 	double dp = 0.001;
-	double dE = 0.01;
+	double dE = 0.001;
 
-	double Emin = 0.1;
-	double Emax = 10;
+	double Emin = 0+dE;
+	double Emax = 1;
 	double E;
 
 	for (E = Emin; E<Emax; E+=dE)
