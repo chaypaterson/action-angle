@@ -80,11 +80,9 @@ int BinSrc(double x, double p, double deltax, double deltap, double E)
 
 double J(double E, double dx, double dp)
 {	// Calculate J for a given E.
-	// TODO This algorithm is dumb! 
-	// Find a more efficient way to calculate areas.
 	double dJ = dx * dp; // area unit
 
-	int i =0;
+	int i = 0;
 	// We will start at the origin:
 	// Find the edges on the x-axis:
 	// NEW: binary search
@@ -120,6 +118,7 @@ int main()
 		double T = dJ/dE; // derivative dJ/dE
 		// return energy level and period:
 		printf("%lf, %lf\n",E,T);
+		// TODO return amplitude and period
 	}
 
 	return 0;
