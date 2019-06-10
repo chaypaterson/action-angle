@@ -7,7 +7,7 @@
  *   and two formulas:
  *   	T = dJ/dE
  *   	J = i*dp*dx (prev. used Pick's theorem but it was inappropriate)
- *   	    here, i is the number of squares inside an implicit surface
+ *   		here, i is the number of squares inside an implicit surface
  * */
 
 double T(double p) 
@@ -33,7 +33,7 @@ double H(double x, double p)
 
 double Pick(int i, int b)
 {
-    // Area by Pick's theorem
+	// Area by Pick's theorem
 	double Area;
 	Area += (double)i;
 	Area += 0.5*(double)b;
@@ -44,9 +44,9 @@ double Pick(int i, int b)
 
 int DumbSrc(double x, double p, double deltax, double deltap, double E)
 {
-    // find edges of surface defined by H(x,p) <= E
-    // old linear search
-    int m = 0;
+	// find edges of surface defined by H(x,p) <= E
+	// old linear search
+	int m = 0;
 	while (H(x,p)<E)
 	{
 		x += deltax;
@@ -54,17 +54,17 @@ int DumbSrc(double x, double p, double deltax, double deltap, double E)
 		m++;
 	}
 
-    return m;
+	return m;
 }
 
 int BinSrc(double x, double p, double deltax, double deltap, double E)
 {
-    // find edges of surface defined by H(x,p) <= E
+	// find edges of surface defined by H(x,p) <= E
 	// NEW: binary search
 	int m = 0;
 	int n = 0;
 
-    // Binary search:
+	// Binary search:
 	while(H(x+m*deltax,p+m*deltap)<E)
 	{
 		n = 0;
@@ -106,8 +106,8 @@ int main()
 {	// Constant increments:
 	double dx = 0.0001;
 	double dp = 0.0001;
-    double errT = 1E-6; // absolute error in period
-    // accuracy in errT = dx*dp/dE, so set dE to:
+	double errT = 1E-6; // absolute error in period
+	// accuracy in errT = dx*dp/dE, so set dE to:
 	double dE = dp*dx/errT;
 
 	double Emin = 0+dE;
@@ -118,7 +118,7 @@ int main()
 	{
 		double dJ = J(E+dE,dx,dp)-J(E,dx,dp);
 		double T = dJ/dE; // derivative dJ/dE
-        // return energy level and period:
+		// return energy level and period:
 		printf("%lf, %lf\n",E,T);
 	}
 
