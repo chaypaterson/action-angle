@@ -10,29 +10,51 @@
  *   		here, i is the number of squares inside an implicit surface
  * */
 
-double T(double p) 
-{	// kinetic energy
+typedef double (*real_func)(double);
+
+typedef struct {
+    double p;
+    double x;
+} point;
+
+typedef double (*hamiltonian)(point);
+
+double T(double p) {
+    // kinetic energy
 	double T = p*p/2;	// unit mass m=1
 	return T;
 }
 
-double V(double x)
-{	// this is the potential
-	double V;
-	V = x*x/2;	// harmonic oscillator, k=1
-//	V = x*x*x*x/4 - x*x/2; // double dip well
-//	V = 1-1/(1+x*x/2);	// lorentzian
-	return V;
+/* Different functions for harmonic, quartic, and lorentzian well:
+ */
+
+double harmonic_V(double x) {
+    // harmonic oscillator, k=1
+    return x*x/2;
 }
 
-double H(double x, double p)
-{
+double quartic(double x) {
+    // quartic well with nontrivial dip
+    return x*x*x*x/4 - x*x/2;
+}
+
+double lorentzian(double x) {
+    // well with finite escape energy
+    return 1-1/(1+x*x/2);
+}
+
+/* double H(double x, double p) {
+    // H should be an argument of type hamiltonian
 	double E = T(p)+V(x);
 	return E;
 }
+*/
 
-double Pick(int i, int b)
-{
+double H_harmonic(point q) {
+    return T(q.p) + harmonic_V(q.x);
+}
+
+double Pick(int i, int b) {
 	// Area by Pick's theorem
 	double Area;
 	Area += (double)i;
@@ -42,80 +64,88 @@ double Pick(int i, int b)
 	return Area;
 }
 
-int DumbSrc(double x, double p, double deltax, double deltap, double E)
-{
-	// find edges of surface defined by H(x,p) <= E
-	// old linear search
-	int m = 0;
-	while (H(x,p)<E)
-	{
-		x += deltax;
-		p += deltap;
-		m++;
-	}
-
-	return m;
-}
-
-int BinSrc(double x, double p, double deltax, double deltap, double E)
-{
+int BinSrc(hamiltonian H, point q, point deltaq, double E) {
 	// find edges of surface defined by H(x,p) <= E
 	// NEW: binary search
 	int m = 0;
-	int n = 0;
 
-	// Binary search:
-	while(H(x+m*deltax,p+m*deltap)<E)
-	{
-		n = 0;
-		while(H(x+m*deltax+deltax*(2<<(n+1)),p+m*deltap+deltap*(2<<(n+1)))<E)
-		{
-			n++;
-		}
+    double p = q.p;
+    double x = q.x;
+    double deltap = deltaq.p;
+    double deltax = deltaq.x;
+    point edge;
+    edge.p = q.p, edge.x = q.x;
+
+	// Binary search: move out in a straight line in direction deltaq
+	while(H(edge) < E) {
+        point beyond = edge;
+        int n;
+        for (n = 0; H(beyond) < E; n++) {
+            beyond.p += deltap * (2<<(n+1));
+            beyond.x += deltax * (2<<(n+1));
+        }
 		m += 2<<n;
+        edge.p += m * deltap;
+        edge.x += m * deltax;
 	}
 
 	return m;
 }
 
-double J(double E, double dx, double dp)
-{	// Calculate J for a given E.
+double J(hamiltonian H, double E, point deltaq) {
+    // TODO the "walker" algorithm from my other project might be more efficient
+    // here. combined with the shoelace equation/Green's theorem, I should be
+    // able to calculate J in O(sqrt(J)) time. This would also avoid assuming
+    // that the area to be computed is convex.
+    // Calculate J for a given E.
+    double dp = deltaq.p;
+    double dx = deltaq.x;
 	double dJ = dx * dp; // area unit
 
 	int i = 0;
 	// We will start at the origin:
 	// Find the edges on the x-axis:
 	// NEW: binary search
-	double Apos = dx*(BinSrc(0,0,dx,0,E));
-	double Aneg = -dx*BinSrc(0,0,-dx,0,E);
+    point origin;
+    origin.p = 0, origin.x = 0;
+    point delta;
+    delta.p = 0, delta.x = dx;
+	double Apos = +dx * BinSrc(H, origin, delta, E);
+    delta.x = -dx;
+	double Aneg = -dx * BinSrc(H, origin, delta, E);
 
 	// Now we scan off the X axis to find other edges:
 	double x;	
-	for (x=Aneg; x<Apos; x+=dx)
-	{	// scanning between Aneg<x<Apos:
-		i += BinSrc(x,0,0,dp,E); // up from x axis
-		i += BinSrc(x,-dp,0,-dp,E); // down from below x
+	for (x = Aneg; x < Apos; x += dx) {	// scanning between Aneg<x<Apos:
+        origin.x = x;
+        delta.p = dp, delta.x = 0;
+		i += BinSrc(H, origin, delta, E); // up from x axis
+        delta.p = -dp, delta.x = 0;
+		i += BinSrc(H, origin, delta, E); // down from below x
 	}
 
-	return (double)i*dJ; // cruder area
+	return dJ * i;
 }
 
-int main()
-{	// Constant increments:
-	double dx = 0.0001;
-	double dp = 0.0001;
-	double errT = 1E-6; // absolute error in period
+int main() {
+    // Constant increments:
+    point dq;
+    dq.x = 0.01;
+    dq.p = 0.01;
+
+	double errT = 1E-3; // absolute error in period
 	// accuracy in errT = dx*dp/dE, so set dE to:
-	double dE = dp*dx/errT;
+	double dE = dq.p * dq.x / errT;
 
 	double Emin = 0+dE;
 	double Emax = 1;
 	double E;
 
-	for (E = Emin; E<Emax; E+=dE)
-	{
-		double dJ = J(E+dE,dx,dp)-J(E,dx,dp);
-		double T = dJ/dE; // derivative dJ/dE
+    hamiltonian H = H_harmonic;
+
+	for (E = Emin; E<Emax; E+=dE) {
+		double dJ = J(H, E + dE / 2,dq)-J(H, E - dE / 2,dq);
+		double T = dJ / dE;
 		// return energy level and period:
 		printf("%lf, %lf\n",E,T);
 		// TODO return amplitude and period
