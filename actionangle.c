@@ -62,8 +62,8 @@ real diffx(hamiltonian H, point* q, real dx) {
 int main() {
     // Constant increments:
     point dq;
-    dq.x = 0.01;
-    dq.y = 0.01;
+    dq.x = 0.1;
+    dq.y = 0.1;
 
     real dA = dq.x;
 
@@ -77,7 +77,7 @@ int main() {
             .y = 0
         };
         real E = H(q);
-        real dx = 0.01 * dA;
+        real dx = 1 * dA;
         real dE = diffx(H, &q, dx);
         printf("%f \n", dE);
         // compute dJ:
